@@ -1,0 +1,244 @@
+---
+title: "Justice and transaprency paper"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(haven)
+library(grf)
+library(magrittr)
+
+set.seed(11)
+```
+
+```{r}
+# TODO: Get previous incomes ala leigh
+data_s <- read_sav('Combined u210u.sav')
+```
+```{r}
+data_s$income <- data_s %>%
+  select(xwaveid, utifefp) %>%
+  left_join(read_sav('Combined s210u.sav',
+                     col_select = which((read_sav('Combined s210u.sav', n_max = 1) %>% colnames() %in% c("stifefp", "xwaveid")))
+                     ), by = "xwaveid") %>%
+  left_join(read_sav('Combined t210u.sav',
+                     col_select = which((read_sav('Combined t210u.sav', n_max = 1) %>% colnames() %in% c("ttifefp", "xwaveid")))
+                     ), by = "xwaveid") %>%
+  select(-xwaveid) %>%
+  mutate_all(as.numeric) %>%
+  rowMeans()
+```
+
+
+```{r}
+labels <- data_s %>% map_df(~attributes(.)$label) %>% gather("name", "label")
+```
+
+```{r}
+id_filter <- read_csv('labels_select.csv') %>% filter(include) %>% select(name)
+```
+
+
+
+```{r}
+# Create vars from https://core.ac.uk/download/pdf/6278539.pdf
+# Ed years
+data_s$highest_ed <- data_s %>%
+  transmute(school_ed = tidyr::extract_numeric(uedhists %>% as_factor %>% as.character()),
+         higher_ed = car::recode(uedhigh1, "-10:-1 = NA;
+                                 1 = 17;
+                                 2 = 16;
+                                 3 = 15;
+                                 4 = 12;
+                                 else = 0
+                                 ")
+         ) %>%
+  rowwise() %>% 
+  transmute(max = max(school_ed, higher_ed)) %>%
+  pull()
+  
+
+
+# Income
+data_s$income[data_s$income < 0] <- 0
+
+# Instrument
+data_s$dob <- data_s %>% select(uhgdob) %>%
+    pull() %>% 
+  as.character() %>% 
+  as.Date.character("%d/%m/%Y")
+```
+
+```{r}
+data_s <- data_s %>% filter(!is.na(highest_ed) & !is.na(income) & uhhstate == 3)
+data_s <- data_s[sample(nrow(data_s), 1000), ]
+```
+
+```{r}
+# Filter for eligibility
+```
+
+
+```{r}
+X <- data_s %>% select(
+  -uedhists, 
+  -uedhigh1, 
+  -utifefp, 
+  -uhgdob,
+  -income,
+  -highest_ed,
+  -dob
+  )
+
+Z <- data_s %>% select(dob)
+Y <- data_s %>% select(income)
+W <- data_s %>% select(highest_ed) 
+weights
+```
+```{r}
+X  %<>%
+  map_df(function (x) {
+    tryCatch(
+      {as.numeric(x)},
+      error=function(cond) {rep(NA, length(x))}
+        )
+  }) %>%
+  select_if(function(x) any(!is.na(x))) %>%
+  missMethods::impute_median()
+```
+
+```{r}
+labels_t <- data_s %>% 
+  map_df(~attributes(.)$label) %>% 
+  gather("name", "label") %>%
+  write_csv('labels.csv')
+
+# var_imp_t <- variable_importance(trimmed_cf) %>% bind_cols(labels_t)
+```
+
+```{r}
+names(X) <- labels_t$label[labels_t$name %in% names(X)]
+```
+
+
+```{r}
+write_csv(X, 'X.csv')
+write_csv(Y, 'Y.csv')
+write_csv(W, 'W.csv')
+```
+
+```{r}
+X_id <- data_s %>% select(id_filter %>% pull) %>% mutate_all(as.numeric)%>% select(where(not_all_na)) %>% missMethods::impute_median()
+
+names(X_id) <- labels_t$label[labels_t$name %in% names(X_id)]
+
+write_csv(X_id, 'X_id.csv')
+```
+
+
+
+```{r}
+not_all_na <- function(x) any(!is.na(x))
+# Identifying models
+delay <- Sys.time()
+y_hat = regression_forest(data_s %>% select(id_filter %>% pull) %>% mutate_all(as.numeric)%>% select(where(not_all_na)) %>% missMethods::impute_median(), Y%>% missMethods::impute_median() %>% pull(), num.trees = 10000)
+Sys.time() - delay
+w_hat = regression_forest(data_s %>% select(id_filter %>% pull) %>% mutate_all(as.numeric)%>% select(where(not_all_na)) %>% missMethods::impute_median(), W%>% missMethods::impute_median() %>% pull(), num.trees = 10000)
+```
+
+
+```{r}
+# Full population
+full_cf <- causal_forest(X, 
+                         Y %>% missMethods::impute_median() %>% pull(), 
+                         W %>% missMethods::impute_median() %>% pull,
+                         Y.hat = predict(y_hat)$predictions,
+                         W.hat = predict(w_hat)$predictions,
+                         sample.weights = data_s$uhhwte,
+                         num.trees = 10000)
+
+# X_trimmed <- select(X, which(variable_importance(full_cf) > mean(variable_importance(full_cf))))
+
+```
+
+
+
+```{r}
+best_linear_projection(full_cf)
+```
+
+```{r}
+X %>%
+  ggplot(aes(x = uhgyob, y = get_scores(trimmed_cf))) + 
+    geom_point() +
+    geom_smooth() +
+    lims(y =  c(-3000, 3000))
+```
+
+```{r}
+average_treatment_effect(trimmed_cf)
+```
+
+```{r}
+predict(trimmed_cf) %>% ggplot(aes(x = predictions, y =  excess.error)) + geom_point() + scale_y_continuous(trans='log10') +
+  geom_smooth()
+```
+
+
+# We use Basu method, selecting variables with only var importance > mean
+
+```{r}
+# Local population
+local_cf
+```
+
+
+```{r}
+read_csv('shaps.csv')[1:4] -> shaps
+
+plots <- list()
+for (i in nrow(shaps)) {
+  ggplot(aes(x = ))
+}
+
+cowplot::plot_grid()
+```
+
+```{r}
+shaps %>%
+  
+```
+
+# Paper analysis plots
+
+```{r}
+average_treatment_effect(full_cf)
+```
+
+```{r}
+ggplot(data = data_s, aes(highest_ed, get_scores(full_cf))) +
+  geom_jitter(alpha = 0.2) +
+  stat_summary(fun=mean, geom="point", aes(group=1), color ="red", size=3.5) +
+  ggforce::facet_zoom(ylim = c(-5000,5000)) +
+  labs(x = "Years of education", y = "Additional income")
+
+ggsave('roe.png')
+```
+
+```{r}
+cowplot::plot_grid(
+data_s %>% 
+  mutate(highest_ed_fact = car::recode(highest_ed, "0:11 = 1; 12=2; 13:99=3")) %>%
+  ggplot(aes(uhgage, get_scores(full_cf))) +
+    geom_jitter(alpha = 0.2) +
+    geom_smooth() +
+    facet_wrap(vars(highest_ed_fact)) +
+    labs(x = "Age", y = "Additional income") +
+    scale_y_continuous(limits = c(-5000,5000))
+)
+
+ggsave('age.png')
+```
+
+

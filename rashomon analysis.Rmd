@@ -1,0 +1,328 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(grf)
+library(causalTree)
+library(rsample)
+library(ggforce)
+# source('predict_fn.R')
+```
+
+```{r}
+id_filter <- read_csv('labels.csv') %>% select(include)
+id_filter[is.na(id_filter)] <- FALSE
+```
+
+Run 'main analysis.Rmd' first.
+
+```{r}
+# Identifying models
+delay <- Sys.time()
+y_hat = regression_forest(X, Y%>% missMethods::impute_median() %>% pull(), num.trees = 100000)
+Sys.time() - delay
+w_hat = regression_forest(X, W%>% missMethods::impute_median() %>% pull(), num.trees = 100000)
+```
+
+```{r}
+
+# 10000 tree causal forest for benchmark
+t100000 <- causal_forest(X, 
+                         Y %>% missMethods::impute_median() %>% pull(), 
+                         W %>% missMethods::impute_median() %>% pull,
+                         Y.hat = y_hat$predictions %>% unlist(),
+                         W.hat = w_hat$predictions %>% unlist(),
+                         sample.weights = data_s$uhhwte,
+                         num.trees = 100000)
+
+# 10000 tree causal forest for benchmark
+t10000 <- causal_forest(X, 
+                         Y %>% missMethods::impute_median() %>% pull(), 
+                         W %>% missMethods::impute_median() %>% pull,
+                         Y.hat = y_hat$predictions %>% unlist(),
+                         W.hat = w_hat$predictions %>% unlist(),
+                         sample.weights = data_s$uhhwte,
+                         num.trees = 10000)
+
+# 1000 tree causal forest
+t1000 <- causal_forest(X, 
+                         Y %>% missMethods::impute_median() %>% pull(), 
+                         W %>% missMethods::impute_median() %>% pull,
+                         Y.hat = y_hat$predictions %>% unlist(),
+                         W.hat = w_hat$predictions %>% unlist(),
+                         sample.weights = data_s$uhhwte,
+                         num.trees = 1000)
+
+# 100 tree causal forest
+t100 <- causal_forest(X, 
+                         Y %>% missMethods::impute_median() %>% pull(), 
+                         W %>% missMethods::impute_median() %>% pull,
+                         Y.hat = y_hat$predictions %>% unlist(),
+                         W.hat = w_hat$predictions %>% unlist(),
+                         sample.weights = data_s$uhhwte,
+                         num.trees = 100)
+
+# 10 tree causal forest
+t10 <- causal_forest(X, 
+                         Y %>% missMethods::impute_median() %>% pull(), 
+                         W %>% missMethods::impute_median() %>% pull,
+                         Y.hat = y_hat$predictions %>% unlist(),
+                         W.hat = w_hat$predictions %>% unlist(),
+                         sample.weights = data_s$uhhwte,
+                         num.trees = 10)
+
+# 2 tree causal forest
+t1 <- causal_forest(X, 
+                         Y %>% missMethods::impute_median() %>% pull(), 
+                         W %>% missMethods::impute_median() %>% pull,
+                         Y.hat = y_hat$predictions %>% unlist(),
+                         W.hat = w_hat$predictions %>% unlist(),
+                         sample.weights = data_s$uhhwte,
+                         num.trees = 1,
+                          ci.group.size = 1)
+
+
+# # Causal tree with unlimited depth
+# t1 <- causal_forest(t10000 %>% get_tree(70), 
+#                          y_hat, 
+#                          w_hat,
+#                          sample.weights = data_s$uhhwte)
+# 
+# # Causal tree with minsize = 50
+# t1_lim <- causal_forest(X, 
+#                          Y %>% missMethods::impute_median() %>% pull(), 
+#                          W %>% missMethods::impute_median() %>% pull,
+#                          Y.hat = y_hat,
+#                          W.hat = w_hat,
+#                          sample.weights = data_s$uhhwte,
+#                          num.trees = 10000)
+
+
+```
+
+```{r}
+losses <- data.frame(
+  t10000 = get_scores(t100000) - get_scores(t10000),
+  t1000 = get_scores(t100000) - get_scores(t1000),
+  t100 = get_scores(t100000) - get_scores(t100),
+  t10 = get_scores(t100000) - get_scores(t10),
+  t1 = get_scores(t100000) - get_scores(t1))
+```
+
+```{r}
+library(ggforce)
+losses %>%
+  mutate_all(abs) %>%
+  gather("Number of trees", "Absolute loss") %>%
+  mutate(`Number of trees` = factor(`Number of trees`,
+                                    levels = c("t1", "t10", "t100", "t1000", "t10000"),
+                                    labels = c("1", "10", "100", "1000", "10000"))) %>%
+  ggplot(aes(x = `Number of trees`, y = `Absolute loss`)) +
+    geom_jitter(alpha = 0.2) +
+    stat_summary(fun=mean, geom="line", aes(group=1), color ="red", size=2)  +
+    facet_zoom(ylim = c(0,5000))
+
+ggsave('loss_graph.png')
+```
+
+```{r}
+library(ggforce)
+losses %>%
+  mutate_all(abs) %>%
+  gather("Number of trees", "Absolute loss") %>%
+  mutate(`Number of trees` = factor(`Number of trees`,
+                                    levels = c("t2", "t10", "t100", "t1000", "t10000"),
+                                    labels = c("2", "10", "100", "1000", "10000"))) %>%
+  ggplot(aes(x = `Number of trees`, y = `Absolute loss`)) +
+    geom_jitter(alpha = 0.2) +
+    stat_summary(fun=mean, geom="line", aes(group=1), color ="red", size=2)  +
+    facet_zoom(ylim = c(0,5000)) 
+```
+
+## Nusiance Rashomon
+
+```{r}
+# Identifying models
+# y_hat100000 = regression_forest(X, Y%>% missMethods::impute_median() %>% pull(), num.trees = 100000)
+# w_hat100000 = regression_forest(X, W%>% missMethods::impute_median() %>% pull(), num.trees = 100000)
+
+y_hat10000 = regression_forest(X, Y%>% missMethods::impute_median() %>% pull(), num.trees = 10000, honesty = FALSE)
+w_hat10000 = regression_forest(X, W%>% missMethods::impute_median() %>% pull(), num.trees = 10000, honesty = FALSE)
+
+y_hat1000 = regression_forest(X, Y%>% missMethods::impute_median() %>% pull(), num.trees = 1000, honesty = FALSE)
+w_hat1000 = regression_forest(X, W%>% missMethods::impute_median() %>% pull(), num.trees = 1000, honesty = FALSE)
+
+y_hat100 = regression_forest(X, Y%>% missMethods::impute_median() %>% pull(), num.trees = 100, honesty = FALSE)
+w_hat100 = regression_forest(X, W%>% missMethods::impute_median() %>% pull(), num.trees = 100, honesty = FALSE)
+
+y_hat10 = regression_forest(X, Y%>% missMethods::impute_median() %>% pull(), num.trees = 10, honesty = FALSE)
+w_hat10 = regression_forest(X, W%>% missMethods::impute_median() %>% pull(), num.trees = 10, honesty = FALSE)
+
+y_hat1 = regression_forest(X, Y%>% missMethods::impute_median() %>% pull(), num.trees = 1, ci.group.size = 1, honesty = FALSE)
+w_hat1 = regression_forest(X, W%>% missMethods::impute_median() %>% pull(), num.trees = 1, ci.group.size = 1, honesty = FALSE)
+```
+
+```{r}
+
+# 10000 tree causal forest for benchmark
+# n100000 <- causal_forest(X,
+#                          Y %>% missMethods::impute_median() %>% pull(),
+#                          W %>% missMethods::impute_median() %>% pull,
+#                          Y.hat = y_hat100000$predictions %>% unlist(),
+#                          W.hat = w_hat100000$predictions %>% unlist(),
+#                          sample.weights = data_s$uhhwte,
+#                          num.trees = 10000)
+
+# 10000 tree causal forest for benchmark
+n10000 <- causal_forest(X, 
+                         Y %>% missMethods::impute_median() %>% pull(), 
+                         W %>% missMethods::impute_median() %>% pull,
+                         Y.hat = predict(y_hat10000, X)$predictions,
+                         W.hat = predict(w_hat10000, X)$predictions,
+                         sample.weights = data_s$uhhwte,
+                         num.trees = 10000)
+
+# 1000 tree causal forest
+n1000 <- causal_forest(X, 
+                         Y %>% missMethods::impute_median() %>% pull(), 
+                         W %>% missMethods::impute_median() %>% pull,
+                         Y.hat = predict(y_hat1000, X)$predictions,
+                         W.hat = predict(w_hat1000, X)$predictions,
+                         sample.weights = data_s$uhhwte,
+                         num.trees = 10000)
+
+# 100 tree causal forest
+n100 <- causal_forest(X, 
+                         Y %>% missMethods::impute_median() %>% pull(), 
+                         W %>% missMethods::impute_median() %>% pull,
+                         Y.hat = predict(y_hat100, X)$predictions,
+                         W.hat = predict(w_hat100, X)$predictions,
+                         sample.weights = data_s$uhhwte,
+                         num.trees = 10000)
+
+# 10 tree causal forest
+n10 <- causal_forest(X, 
+                         Y %>% missMethods::impute_median() %>% pull(), 
+                         W %>% missMethods::impute_median() %>% pull,
+                         Y.hat = predict(y_hat10, X)$predictions,
+                         W.hat = predict(w_hat10, X)$predictions,
+                         sample.weights = data_s$uhhwte,
+                         num.trees = 10000)
+
+# 2 tree causal forest
+n1 <- causal_forest(X, 
+                         Y %>% missMethods::impute_median() %>% pull(), 
+                         W %>% missMethods::impute_median() %>% pull,
+                         Y.hat = predict(y_hat1, X)$predictions,
+                         W.hat = predict(w_hat1, X)$predictions,
+                         sample.weights = data_s$uhhwte,
+                         num.trees = 10000)
+
+```
+
+```{r}
+losses_n <- data.frame(
+  t1000 = get_scores(n10000) - get_scores(n1000),
+  t100 = get_scores(n10000) - get_scores(n100),
+  t10 = get_scores(n10000) - get_scores(n10),
+  t1 = get_scores(n10000) - get_scores(n1))
+```
+
+```{r}
+library(ggforce)
+losses_n %>%
+  mutate_all(abs) %>%
+  gather("Number of trees", "Absolute loss") %>%
+  mutate(`Number of trees` = factor(`Number of trees`,
+                                    levels = c("t1", "t10", "t100", "t1000"),
+                                    labels = c("1", "10", "100", "1000"))) %>%
+  ggplot(aes(x = `Number of trees`, y = `Absolute loss`)) +
+    geom_jitter(alpha = 0.2) +
+    stat_summary(fun=mean, geom="line", aes(group=1), color ="red", size=2)  +
+    facet_zoom(ylim = c(0,10000))
+
+ggsave('loss_graph_n.png')
+```
+
+```{r}
+losses_n %>%
+  gather("Number of trees", "Absolute loss") %>%
+  mutate(`Number of trees` = factor(`Number of trees`,
+                                    levels = c("t1", "t10", "t100", "t1000"),
+                                    labels = c("1", "10", "100", "1000"))) %>%
+  ggplot(aes(x = `Number of trees`, y = `Absolute loss`)) +
+    geom_jitter(alpha = 0.2) +
+    stat_summary(fun=mean, geom="line", aes(group=1), color ="red", size=2)  +
+    facet_zoom(ylim = c(0,10000))
+
+ggsave('bias_graph_n.png')
+```
+
+
+# Placebo tests
+
+```{r}
+set.seed(30)
+# Placebo
+placebo_w <- W[sample.int(nrow(W), replace = T),]
+
+placebo_cf <- causal_forest(X, 
+                         Y %>% missMethods::impute_median() %>% pull(), 
+                         placebo_w %>% pull,
+                         sample.weights = data_s$uhhwte,
+                         num.trees = 10000)
+```
+
+```{r}
+average_treatment_effect(placebo_cf)
+```
+
+```{r}
+ggplot(data = W, aes(x = highest_ed, y = get_scores(placebo_cf))) +
+  geom_jitter(alpha = 0.2) +
+  stat_summary(fun=mean, geom="point", aes(group=1), color ="red", size=3.5) +
+  facet_zoom(ylim = c(-10000,10000))
+
+ggsave('refute.png')
+```
+
+
+```{r}
+# Placebo
+placebo_y <- Y[sample.int(nrow(Y), replace = T),]
+
+randy_cf <- causal_forest(X, 
+                        placebo_y %>% pull,
+                         W %>% missMethods::impute_median() %>% pull(),
+                         sample.weights = data_s$uhhwte,
+                         num.trees = 10000)
+```
+
+```{r}
+average_treatment_effect(randy_cf)
+```
+
+```{r}
+ggplot(data = Y, aes(x = income, y = get_scores(placebo_cf))) +
+  geom_jitter(alpha = 0.2) +
+  geom_smooth() +
+  facet_zoom(ylim = c(-10000,10000)) +
+  scale_x_continuous(limits = c(0, 2e5))
+```
+
+```{r}
+ggplot(predict(w_hat), aes(W$highest_ed, abs(predictions - W$highest_ed))) +
+  geom_jitter(alpha = 0.2) +
+  geom_smooth() +
+  labs(x= "Years of education", y = "Absolute loss for w_hat")
+
+ggsave('orthogonal.png')
+```
+```{r}
+ggplot(predict(y_hat), aes(Y$income, abs(predictions - Y$income))) +
+  geom_jitter(alpha = 0.2) +
+  scale_y_continuous(limits = c(0,1e5))
+```
