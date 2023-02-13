@@ -1,0 +1,30 @@
+---
+title: "IV Analysis"
+output: html_notebook
+---
+
+
+```{r}
+library(tidyverse)
+library(magrittr)
+library(grf)
+source('year_start_fn.R')
+```
+
+```{r}
+data <- read_csv() %>%
+  filter(state == Queensland) %>%
+  mutate(start_gap = as.Date(dob) %>% start_date(),
+         thresh_flag = start_gap < 0) %>%
+  filter(start_gap >= -90 & start_gap <= 90)
+```
+
+```{r}
+age_if <- instrumental_forest(X, Y, data$start_gap * data$yob)
+```
+
+
+
+
+
+
