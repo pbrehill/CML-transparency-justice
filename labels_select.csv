@@ -6368,34 +6368,34 @@ ufmfuemp,History: Was father unemployed for 6 months or more while you were grow
 ufmmemp,History: Was mother in paid employment when you were 14,TRUE
 ufmmo06,History: Mother's occupation - 4 digit ANZSCO 2006,TRUE
 ufmmo62,History: Mother's occupation 2-digit ANZSCO 2006,TRUE
-uedagels,History: Age left school,TRUE
-uedhists,History: Highest year of school completed (excludes equivalents obtained post-school)/currently attending,TRUE
-uedtypes,History: Type of school attended/attending,TRUE
+uedagels,History: Age left school,FALSE
+uedhists,History: Highest year of school completed (excludes equivalents obtained post-school)/currently attending,FALSE
+uedtypes,History: Type of school attended/attending,FALSE
 uedcly,History: Country of last school year,TRUE
-uedqenr,History: Ever enrolled in a course of study to obtain a qualification,TRUE
+uedqenr,History: Ever enrolled in a course of study to obtain a qualification,FALSE
 uedcoq,History: Country completed highest qualification in,FALSE
-uedq100,History: ASCED 100 Postgraduate - Number of qualifications obtained since leaving school,TRUE
-uedq110,History: ASCED 110 Doctoral degree - Number of qualifications obtained since leaving school,TRUE
-uedq120,History: ASCED 120 Master degree - Number of qualifications obtained since leaving school,TRUE
-uedq200,History: ASCED 200 Grad Dip and Grad Cert - Number of qualifications obtained since leaving school,TRUE
-uedq221,History: ASCED 221 Graduate certificate - Number of qualifications obtained since leaving school,TRUE
-uedq211,History: ASCED 211 Graduate diploma - Number of qualifications obtained since leaving school,TRUE
-uedq310,History: ASCED 310 Bachelor degree - Number of qualifications obtained since leaving school,TRUE
-uedq311,History: ASCED 311 Bachelor (Honours) degree - Number of qualifications obtained since leaving school,TRUE
-uedq312,History: ASCED 312 Bachelor (Pass) degree - Number of qualifications obtained since leaving school,TRUE
-uedq400,History: ASCED 400 Advanced diploma and diploma - Number of qualifications obtained since leaving school,TRUE
-uedq413,History: ASCED 413 Associate degree - Number of qualifications obtained since leaving school,TRUE
-uedq421,History: ASCED 421 Diploma - Number of qualifications obtained since leaving school,TRUE
-uedq411,History: ASCED 411 Advanced diploma - Number of qualifications obtained since leaving school,TRUE
-uedq500,History: ASCED 500 Certificate - dont know level - Number of qualifications obtained since leaving school,TRUE
-uedq524,History: ASCED 524 Certificate level I - Number of qualifications obtained since leaving school,TRUE
-uedq521,History: ASCED 521 Certificate level II - Number of qualifications obtained since leaving school,TRUE
-uedq514,History: ASCED 514 Certificate level III - Number of qualifications obtained since leaving school,TRUE
-uedq511,History: ASCED 511 Certificate level IV - Number of qualifications obtained since leaving school,TRUE
-uedq600,History: ASCED 600 Secondary education - Number of qualifications obtained since leaving school,TRUE
-uedq611,History: ASCED 611 Year 12 - Number of qualifications obtained since leaving school,TRUE
-uedqunk,History: ASCED Unknown - not enough information - Number of qualifications obtained since leaving school,TRUE
-uedhigh1,History: Highest education level achieved,TRUE
+uedq100,History: ASCED 100 Postgraduate - Number of qualifications obtained since leaving school,FALSE
+uedq110,History: ASCED 110 Doctoral degree - Number of qualifications obtained since leaving school,FALSE
+uedq120,History: ASCED 120 Master degree - Number of qualifications obtained since leaving school,FALSE
+uedq200,History: ASCED 200 Grad Dip and Grad Cert - Number of qualifications obtained since leaving school,FALSE
+uedq221,History: ASCED 221 Graduate certificate - Number of qualifications obtained since leaving school,FALSE
+uedq211,History: ASCED 211 Graduate diploma - Number of qualifications obtained since leaving school,FALSE
+uedq310,History: ASCED 310 Bachelor degree - Number of qualifications obtained since leaving school,FALSE
+uedq311,History: ASCED 311 Bachelor (Honours) degree - Number of qualifications obtained since leaving school,FALSE
+uedq312,History: ASCED 312 Bachelor (Pass) degree - Number of qualifications obtained since leaving school,FALSE
+uedq400,History: ASCED 400 Advanced diploma and diploma - Number of qualifications obtained since leaving school,FALSE
+uedq413,History: ASCED 413 Associate degree - Number of qualifications obtained since leaving school,FALSE
+uedq421,History: ASCED 421 Diploma - Number of qualifications obtained since leaving school,FALSE
+uedq411,History: ASCED 411 Advanced diploma - Number of qualifications obtained since leaving school,FALSE
+uedq500,History: ASCED 500 Certificate - dont know level - Number of qualifications obtained since leaving school,FALSE
+uedq524,History: ASCED 524 Certificate level I - Number of qualifications obtained since leaving school,FALSE
+uedq521,History: ASCED 521 Certificate level II - Number of qualifications obtained since leaving school,FALSE
+uedq514,History: ASCED 514 Certificate level III - Number of qualifications obtained since leaving school,FALSE
+uedq511,History: ASCED 511 Certificate level IV - Number of qualifications obtained since leaving school,FALSE
+uedq600,History: ASCED 600 Secondary education - Number of qualifications obtained since leaving school,FALSE
+uedq611,History: ASCED 611 Year 12 - Number of qualifications obtained since leaving school,FALSE
+uedqunk,History: ASCED Unknown - not enough information - Number of qualifications obtained since leaving school,FALSE
+uedhigh1,History: Highest education level achieved,FALSE
 umrn,History: How many times have you been legally married,TRUE
 umrpmth,History: Month married - present or most recent marriage,FALSE
 umrpyr,History: Year married - present or most recent marriage,FALSE

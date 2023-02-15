@@ -1,0 +1,141 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(haven)
+library(grf)
+library(magrittr)
+
+source('year_start_fn.R')
+
+set.seed(11)
+```
+
+```{r}
+# TODO: Get previous incomes ala leigh
+data_s <- read_sav('Combined u210u.sav')
+```
+```{r}
+data_s$income <- data_s %>%
+  select(xwaveid, utifefp) %>%
+  left_join(read_sav('Combined s210u.sav',
+                     col_select = which((read_sav('Combined s210u.sav', n_max = 1) %>% colnames() %in% c("stifefp", "xwaveid")))
+                     ), by = "xwaveid") %>%
+  left_join(read_sav('Combined t210u.sav',
+                     col_select = which((read_sav('Combined t210u.sav', n_max = 1) %>% colnames() %in% c("ttifefp", "xwaveid")))
+                     ), by = "xwaveid") %>%
+  select(-xwaveid) %>%
+  mutate_all(as.numeric) %>%
+  rowMeans()
+```
+
+
+```{r}
+labels <- data_s %>% map_df(~attributes(.)$label) %>% gather("name", "label")
+```
+
+```{r}
+id_filter <- read_csv('labels_select.csv') %>% filter(include) %>% select(name)
+```
+
+
+
+```{r}
+# Create vars from https://core.ac.uk/download/pdf/6278539.pdf
+# Ed years
+data_s$highest_ed <- data_s %>%
+  transmute(school_ed = tidyr::extract_numeric(uedhists %>% as_factor %>% as.character()),
+         higher_ed = car::recode(uedhigh1, "-10:-1 = NA;
+                                 1 = 17;
+                                 2 = 16;
+                                 3 = 15;
+                                 4 = 12;
+                                 else = 0
+                                 ")
+         ) %>%
+  rowwise() %>% 
+  transmute(max = max(school_ed, higher_ed)) %>%
+  pull()
+  
+
+
+# Income
+data_s$income[data_s$income < 0] <- 0
+
+# Instrument
+data_s$dob <- data_s %>% select(uhgdob) %>%
+    pull() %>% 
+  as.character() %>% 
+  as.Date.character("%d/%m/%Y")
+
+data_s$yob <- data_s$dob %>%
+  format("%Y") %>%
+  as.numeric
+
+data_s$sch_start <- data_s$dob %>%
+  map_dbl(start_date)
+
+data_s$flag <- as.numeric(data_s$sch_start >= 0)
+```
+
+```{r}
+data_s <- data_s %>% filter(!is.na(highest_ed) & !is.na(income) & uhhstate == 3,
+                            !is.na(sch_start),
+                            (sch_start >= -90) & (sch_start <= 90),
+                            yob >= 1958 & yob <= 1998
+                            )
+# data_s <- data_s[sample(nrow(data_s), 1000), ]
+```
+
+```{r}
+# Filter for eligibility
+```
+
+
+```{r}
+id_vars <- read.delim('ID_vars.txt', sep = "\n") %>% pull()
+
+X <- data_s %>% select(
+  -uedhists, 
+  -uedhigh1, 
+  -utifefp, 
+  -uhgdob,
+  -income,
+  -highest_ed,
+  -dob
+  )
+# 
+# X_orth <- data_s[id_vars] %>%
+#   mutate_all(as.numeric)%>% select(where(not_all_na)) %>% missMethods::impute_median()
+  
+
+Z <- data_s %>% select(sch_start)
+Z <- Z * as.numeric(format(data_s$dob, "%Y"))
+  
+Y <- data_s %>% select(income)
+W <- data_s %>% select(highest_ed) 
+weights
+```
+
+```{r}
+library(ivreg)
+data_s$log_income <- log(data_s$income)
+m_ols <- ivreg(log_income ~ highest_ed + uhgsex + as.integer(sch_start / 30) | as.integer(format(dob, "%m")) * yob,
+  data = data_s %>% filter(log_income > 0))
+summary(m_ols)
+```
+
+
+```{r}
+# Remove median imputation
+iforest <- instrumental_forest(X_orth, 
+                               Y %>% missMethods::impute_median() %>% pull(), 
+                               W %>% missMethods::impute_median() %>% pull(), 
+                               Z %>% pull(), 
+                               num.trees = 10000)
+```
+
+

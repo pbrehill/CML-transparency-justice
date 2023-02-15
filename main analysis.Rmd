@@ -72,7 +72,7 @@ data_s$dob <- data_s %>% select(uhgdob) %>%
 
 ```{r}
 data_s <- data_s %>% filter(!is.na(highest_ed) & !is.na(income) & uhhstate == 3)
-data_s <- data_s[sample(nrow(data_s), 1000), ]
+# data_s <- data_s[sample(nrow(data_s), 1000), ]
 ```
 
 ```{r}
@@ -81,6 +81,8 @@ data_s <- data_s[sample(nrow(data_s), 1000), ]
 
 
 ```{r}
+id_vars <- read.delim('ID_vars.txt', sep = "\n") %>% pull()
+
 X <- data_s %>% select(
   -uedhists, 
   -uedhigh1, 
@@ -91,8 +93,12 @@ X <- data_s %>% select(
   -dob
   )
 
+X_orth <- data_s[id_vars] %>%
+  mutate_all(as.numeric)%>% select(where(not_all_na)) %>% missMethods::impute_median()
+  
+
 Z <- data_s %>% select(dob)
-Y <- data_s %>% select(income)
+Y <- data_s %>% select(income) %>% log()
 W <- data_s %>% select(highest_ed) 
 weights
 ```
@@ -124,7 +130,7 @@ names(X) <- labels_t$label[labels_t$name %in% names(X)]
 
 ```{r}
 write_csv(X, 'X.csv')
-write_csv(Y, 'Y.csv')
+# write_csv(Y, 'Y.csv')
 write_csv(W, 'W.csv')
 ```
 
@@ -142,15 +148,15 @@ write_csv(X_id, 'X_id.csv')
 not_all_na <- function(x) any(!is.na(x))
 # Identifying models
 delay <- Sys.time()
-y_hat = regression_forest(data_s %>% select(id_filter %>% pull) %>% mutate_all(as.numeric)%>% select(where(not_all_na)) %>% missMethods::impute_median(), Y%>% missMethods::impute_median() %>% pull(), num.trees = 10000)
+y_hat = regression_forest(X_orth, Y %>% missMethods::impute_median() %>% pull(), num.trees = 10000)
 Sys.time() - delay
-w_hat = regression_forest(data_s %>% select(id_filter %>% pull) %>% mutate_all(as.numeric)%>% select(where(not_all_na)) %>% missMethods::impute_median(), W%>% missMethods::impute_median() %>% pull(), num.trees = 10000)
+w_hat = regression_forest(X_orth, W %>% missMethods::impute_median() %>% pull(), num.trees = 10000)
 ```
 
 
 ```{r}
 # Full population
-full_cf <- causal_forest(X, 
+full_cf <- causal_forest(X_orth, 
                          Y %>% missMethods::impute_median() %>% pull(), 
                          W %>% missMethods::impute_median() %>% pull,
                          Y.hat = predict(y_hat)$predictions,
@@ -165,15 +171,15 @@ full_cf <- causal_forest(X,
 
 
 ```{r}
-best_linear_projection(full_cf)
+# best_linear_projection(full_cf)
 ```
 
 ```{r}
-X %>%
-  ggplot(aes(x = uhgyob, y = get_scores(trimmed_cf))) + 
-    geom_point() +
-    geom_smooth() +
-    lims(y =  c(-3000, 3000))
+# X %>%
+#   ggplot(aes(x = uhgyob, y = get_scores(trimmed_cf))) + 
+#     geom_point() +
+#     geom_smooth() +
+#     lims(y =  c(-3000, 3000))
 ```
 
 ```{r}
@@ -220,7 +226,7 @@ average_treatment_effect(full_cf)
 ggplot(data = data_s, aes(highest_ed, get_scores(full_cf))) +
   geom_jitter(alpha = 0.2) +
   stat_summary(fun=mean, geom="point", aes(group=1), color ="red", size=3.5) +
-  ggforce::facet_zoom(ylim = c(-5000,5000)) +
+  ggforce::facet_zoom(ylim = c(-20000,50000)) +
   labs(x = "Years of education", y = "Additional income")
 
 ggsave('roe.png')
@@ -241,4 +247,11 @@ data_s %>%
 ggsave('age.png')
 ```
 
+```{r}
+ggplot(predict(w_hat), aes(W$highest_ed, abs(predict(w_hat)$predictions - W$highest_ed))) +
+  geom_jitter(alpha = 0.2) +
+  geom_smooth() +
+  labs(x= "Years of education", y = "Absolute loss for w_hat")
 
+ggsave('orthogonal.png')
+```
