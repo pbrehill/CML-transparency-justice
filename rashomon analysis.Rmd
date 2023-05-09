@@ -6,14 +6,13 @@ output: html_notebook
 ```{r}
 library(tidyverse)
 library(grf)
-library(causalTree)
 library(rsample)
 library(ggforce)
 # source('predict_fn.R')
 ```
 
 ```{r}
-id_filter <- read_csv('labels.csv') %>% select(include)
+id_filter <- read_csv('labels_select.csv') %>% select(include)
 id_filter[is.na(id_filter)] <- FALSE
 ```
 

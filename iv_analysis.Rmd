@@ -131,7 +131,7 @@ summary(m_ols)
 
 ```{r}
 # Remove median imputation
-iforest <- instrumental_forest(X_orth, 
+iforest <- instrumental_forest(X, 
                                Y %>% missMethods::impute_median() %>% pull(), 
                                W %>% missMethods::impute_median() %>% pull(), 
                                Z %>% pull(), 
