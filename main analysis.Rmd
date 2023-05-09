@@ -101,6 +101,9 @@ Z <- data_s %>% select(dob)
 Y <- data_s %>% select(income) %>% log()
 W <- data_s %>% select(highest_ed) 
 weights
+
+Y[is.infinite(Y %>% pull),] <- NA
+W[is.infinite(W %>% pull),] <- NA
 ```
 ```{r}
 X  %<>%

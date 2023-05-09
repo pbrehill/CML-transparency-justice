@@ -104,11 +104,12 @@ t1 <- causal_forest(X,
 
 ```{r}
 losses <- data.frame(
-  t10000 = get_scores(t100000) - get_scores(t10000),
-  t1000 = get_scores(t100000) - get_scores(t1000),
-  t100 = get_scores(t100000) - get_scores(t100),
-  t10 = get_scores(t100000) - get_scores(t10),
-  t1 = get_scores(t100000) - get_scores(t1))
+  t10000 = t100000$prediction - t10000$predictions,
+  t1000 = t100000$prediction - t1000$predictions,
+  t100 = t100000$prediction - t100$predictions,
+  t10 = t100000$prediction - t10$predictions,
+  t1 = t100000$prediction - t1$predictions
+)
 ```
 
 ```{r}
@@ -121,8 +122,7 @@ losses %>%
                                     labels = c("1", "10", "100", "1000", "10000"))) %>%
   ggplot(aes(x = `Number of trees`, y = `Absolute loss`)) +
     geom_jitter(alpha = 0.2) +
-    stat_summary(fun=mean, geom="line", aes(group=1), color ="red", size=2)  +
-    facet_zoom(ylim = c(0,5000))
+    stat_summary(fun=mean, geom="line", aes(group=1), color ="red", size=2)
 
 ggsave('loss_graph.png')
 ```
@@ -137,8 +137,7 @@ losses %>%
                                     labels = c("2", "10", "100", "1000", "10000"))) %>%
   ggplot(aes(x = `Number of trees`, y = `Absolute loss`)) +
     geom_jitter(alpha = 0.2) +
-    stat_summary(fun=mean, geom="line", aes(group=1), color ="red", size=2)  +
-    facet_zoom(ylim = c(0,5000)) 
+    stat_summary(fun=mean, geom="line", aes(group=1), color ="red", size=2)
 ```
 
 ## Nusiance Rashomon
@@ -224,10 +223,10 @@ n1 <- causal_forest(X,
 
 ```{r}
 losses_n <- data.frame(
-  t1000 = get_scores(n10000) - get_scores(n1000),
-  t100 = get_scores(n10000) - get_scores(n100),
-  t10 = get_scores(n10000) - get_scores(n10),
-  t1 = get_scores(n10000) - get_scores(n1))
+  t1000 = n10000$predictions - n1000$predictions,
+  t100 = n10000$predictions - n100$predictions,
+  t10 = n10000$predictions - n10$predictions,
+  t1 = n10000$predictions - n1$predictions)
 ```
 
 ```{r}
@@ -280,7 +279,7 @@ average_treatment_effect(placebo_cf)
 ```
 
 ```{r}
-ggplot(data = W, aes(x = highest_ed, y = get_scores(placebo_cf))) +
+ggplot(data = W, aes(x = highest_ed, y = placebo_cf$predictions)) +
   geom_jitter(alpha = 0.2) +
   stat_summary(fun=mean, geom="point", aes(group=1), color ="red", size=3.5) +
   facet_zoom(ylim = c(-10000,10000))
@@ -305,7 +304,7 @@ average_treatment_effect(randy_cf)
 ```
 
 ```{r}
-ggplot(data = Y, aes(x = income, y = get_scores(placebo_cf))) +
+ggplot(data = Y, aes(x = income, y = placebo_cf$predictions)) +
   geom_jitter(alpha = 0.2) +
   geom_smooth() +
   facet_zoom(ylim = c(-10000,10000)) +
