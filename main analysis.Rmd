@@ -13,9 +13,17 @@ set.seed(11)
 ```
 
 ```{r}
+not_all_na <- function(x) {
+  length(x[!is.na(x)]) == 0
+}
+```
+
+
+```{r}
 # TODO: Get previous incomes ala leigh
 data_s <- read_sav('Combined u210u.sav')
 ```
+
 ```{r}
 data_s$income <- data_s %>%
   select(xwaveid, utifefp) %>%
@@ -186,12 +194,12 @@ full_cf <- causal_forest(X_orth,
 ```
 
 ```{r}
-average_treatment_effect(trimmed_cf)
+# average_treatment_effect(trimmed_cf)
 ```
 
 ```{r}
-predict(trimmed_cf) %>% ggplot(aes(x = predictions, y =  excess.error)) + geom_point() + scale_y_continuous(trans='log10') +
-  geom_smooth()
+# predict(trimmed_cf) %>% ggplot(aes(x = predictions, y =  excess.error)) + geom_point() + scale_y_continuous(trans='log10') +
+#   geom_smooth()
 ```
 
 
@@ -199,7 +207,7 @@ predict(trimmed_cf) %>% ggplot(aes(x = predictions, y =  excess.error)) + geom_p
 
 ```{r}
 # Local population
-local_cf
+# local_cf
 ```
 
 
@@ -212,11 +220,6 @@ for (i in nrow(shaps)) {
 }
 
 cowplot::plot_grid()
-```
-
-```{r}
-shaps %>%
-  
 ```
 
 # Paper analysis plots
