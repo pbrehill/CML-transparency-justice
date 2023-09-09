@@ -25,7 +25,7 @@ placebo_cf <- causal_forest(X,
                             Y, 
                             placebo_w,
                             sample.weights = weights,
-                            num.trees = 10000)
+                            num.trees = 1000)
 
 average_treatment_effect(placebo_cf)
 
@@ -36,7 +36,7 @@ randy_cf <- causal_forest(X,
                           placebo_y,
                           W,
                           sample.weights = weights,
-                          num.trees = 10000)
+                          num.trees = 1000)
 
 
 
@@ -47,7 +47,7 @@ rand_all <- causal_forest(X,
                           placebo_y,
                           placebo_w,
                           sample.weights = weights,
-                          num.trees = 10000)
+                          num.trees = 1000)
 
 
 # Refutation graphs

@@ -16,14 +16,14 @@ X_id = pd.read_csv('X_id.csv')
 
 # id_select = labs.label.loc[labs.include]
 # Estimate nuisance models
-w_model = RandomForestRegressor(n_estimators = 2000)
+w_model = RandomForestRegressor(n_estimators = 1000)
 w_model.fit(X_id, W)
 
-y_model = RandomForestRegressor(n_estimators = 2000)
+y_model = RandomForestRegressor(n_estimators = 1000)
 y_model.fit(X_id, Y)
 
 # fit causal forest with default parameters 
-causal_forest = CausalForestDML(n_estimators = 2000)
+causal_forest = CausalForestDML(n_estimators = 1000)
 causal_forest.fit(Y, W, X=X)
 # X = X.rename(columns=dict(zip(labs["name"], labs["label"])))
 
