@@ -13,7 +13,7 @@ w_hat <- data_full$What
 y_hat <- data_full$Yhat
 X_id <- data_full$Xid
 
-main_cf <- causal_forest(X, Y, W, y_hat, w_hat, num.trees = 10000, sample.weights = weights)
+main_cf <- causal_forest(X, Y, W, y_hat, w_hat, num.trees = 1000, sample.weights = weights)
 
 # ATE
 

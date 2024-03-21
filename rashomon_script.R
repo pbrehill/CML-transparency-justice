@@ -3,7 +3,6 @@ library(tidyverse)
 library(grf)
 library(ggforce)
 
-source('predict_fn.R')
 data_full <- readRDS('data.rds')
 set.seed(30)
 
@@ -21,13 +20,13 @@ X_id <- data_full$Xid
 
 
 # 10000 tree causal forest for benchmark
-t100000 <- causal_forest(X_id, 
-                         Y, 
-                         W,
-                         Y.hat = y_hat,
-                         W.hat = w_hat,
-                         sample.weights = weights,
-                         num.trees = 100000)
+# t100000 <- causal_forest(X_id, 
+#                          Y, 
+#                          W,
+#                          Y.hat = y_hat,
+#                          W.hat = w_hat,
+#                          sample.weights = weights,
+#                          num.trees = 100000)
 
 # 10000 tree causal forest for benchmark
 t10000 <- causal_forest(X_id, 
@@ -96,11 +95,11 @@ t1 <- causal_forest(X,
 
 
 losses <- data.frame(
-  t10000 = abs((t100000$prediction - t10000$predictions) / t100000$prediction),
-  t1000 = abs((t100000$prediction - t1000$predictions) / t100000$prediction),
-  t100 = abs((t100000$prediction - t100$predictions) / t100000$prediction),
-  t10 = abs((t100000$prediction - t10$predictions) / t100000$prediction),
-  t1 = abs((t100000$prediction - t1$predictions) / t100000$prediction)
+  # t10000 = abs((t100000$prediction - t10000$predictions) / t100000$prediction),
+  t1000 = abs((t10000$prediction - t1000$predictions) / t10000$prediction),
+  t100 = abs((t10000$prediction - t100$predictions) / t10000$prediction),
+  t10 = abs((t10000$prediction - t10$predictions) / t10000$prediction),
+  t1 = abs((t10000$prediction - t1$predictions) / t10000$prediction)
 )
 
 
@@ -174,7 +173,8 @@ n10000 <- causal_forest(X_id,
                         Y.hat = predict(y_hat10000, X_id)$predictions,
                         W.hat = predict(w_hat10000, X_id)$predictions,
                         sample.weights = weights,
-                        num.trees = 10000)
+                        num.trees = 1000)
+print("Biggest nuisance fn fitted")
 
 # 1000 tree causal forest
 n1000 <- causal_forest(X_id, 
@@ -183,7 +183,8 @@ n1000 <- causal_forest(X_id,
                        Y.hat = predict(y_hat1000, X_id)$predictions,
                        W.hat = predict(w_hat1000, X_id)$predictions,
                        sample.weights = weights,
-                       num.trees = 10000)
+                       num.trees = 1000)
+print("Next nuisance fn fitted")
 
 # 100 tree causal forest
 n100 <- causal_forest(X_id, 
@@ -192,7 +193,7 @@ n100 <- causal_forest(X_id,
                       Y.hat = predict(y_hat100, X_id)$predictions,
                       W.hat = predict(w_hat100, X_id)$predictions,
                       sample.weights = weights,
-                      num.trees = 10000)
+                      num.trees = 1000)
 
 # 10 tree causal forest
 n10 <- causal_forest(X_id, 
@@ -201,7 +202,7 @@ n10 <- causal_forest(X_id,
                      Y.hat = predict(y_hat10, X_id)$predictions,
                      W.hat = predict(w_hat10, X_id)$predictions,
                      sample.weights = weights,
-                     num.trees = 10000)
+                     num.trees = 1000)
 
 # 2 tree causal forest
 n1 <- causal_forest(X_id, 
@@ -210,7 +211,7 @@ n1 <- causal_forest(X_id,
                     Y.hat = predict(y_hat1, X_id)$predictions,
                     W.hat = predict(w_hat1, X_id)$predictions,
                     sample.weights = weights,
-                    num.trees = 10000)
+                    num.trees = 1000)
 
 
 

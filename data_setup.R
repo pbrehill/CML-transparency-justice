@@ -11,19 +11,22 @@ not_all_na <- function(x) {
   length(x[!is.na(x)]) != 0
 }
 
+file_u <- file.path('data', 'Combined u210u.sav')
+file_t <- file.path('data', 'Combined t210u.sav')
+file_s <- file.path('data', 'Combined s210u.sav')
 
 # Load HILDA data
-data_s <- read_sav('Combined u210u.sav')
+data_s <- read_sav(file_u)
 
 
 # Get multi-year income
 data_s$income <- data_s %>%
   select(xwaveid, utifefp) %>%
-  left_join(read_sav('Combined s210u.sav',
-                     col_select = which((read_sav('Combined s210u.sav', n_max = 1) %>% colnames() %in% c("stifefp", "xwaveid")))
+  left_join(read_sav(file_s,
+                     col_select = which((read_sav(file_s, n_max = 1) %>% colnames() %in% c("stifefp", "xwaveid")))
   ), by = "xwaveid") %>%
-  left_join(read_sav('Combined t210u.sav',
-                     col_select = which((read_sav('Combined t210u.sav', n_max = 1) %>% colnames() %in% c("ttifefp", "xwaveid")))
+  left_join(read_sav(file_t,
+                     col_select = which((read_sav(file_t, n_max = 1) %>% colnames() %in% c("ttifefp", "xwaveid")))
   ), by = "xwaveid") %>%
   select(-xwaveid) %>%
   mutate_all(as.numeric) %>%
@@ -143,9 +146,9 @@ write_csv(X_orth, 'X_id.csv')
 not_all_na <- function(x) any(!is.na(x))
 # Identifying models
 delay <- Sys.time()
-y_hat = regression_forest(X_orth, Y, num.trees = 10000)
+y_hat = regression_forest(X_orth, Y, num.trees = 1000)
 Sys.time() - delay
-w_hat = regression_forest(X_orth, W, num.trees = 10000)
+w_hat = regression_forest(X_orth, W, num.trees = 1000)
 
 list(
   X = X_orth, Y=Y, W=W, Xid = X_orth, 
