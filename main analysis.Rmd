@@ -8,6 +8,7 @@ library(tidyverse)
 library(haven)
 library(grf)
 library(magrittr)
+library(kableExtra)
 
 set.seed(11)
 ```
@@ -66,7 +67,9 @@ data_s$highest_ed <- data_s %>%
   transmute(max = max(school_ed, higher_ed)) %>%
   pull()
   
-
+data_s <- data_s %>%
+  mutate(bin_treat = car::recode(highest_ed, "12 = 0; 15 = 1; else = NA")) %>%
+  filter(!is.na(bin_treat))
 
 # Income
 data_s$income[data_s$income < 0] <- 0

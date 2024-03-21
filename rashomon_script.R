@@ -3,7 +3,7 @@ library(tidyverse)
 library(grf)
 library(ggforce)
 
-# source('predict_fn.R')
+source('predict_fn.R')
 data_full <- readRDS('data.rds')
 set.seed(30)
 
@@ -115,8 +115,8 @@ losses %>%
   geom_jitter(alpha = 0.2) +
   stat_summary(fun=mean, geom="line", color ="red", alpha = 0.6, size=2) +
   stat_summary(fun=mean, geom="point", color ="red", size=4) +
-  scale_y_continuous(labels = scales::percent) +
-  facet_zoom(ylim = c(0, 1))
+  scale_y_continuous(labels = scales::percent, limits = c(0, 100)) +
+  facet_zoom(ylim = c(0, 1.5))
 
 ggsave('figures/rashomon_main.png')
 
