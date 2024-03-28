@@ -215,14 +215,14 @@ full_cf <- causal_forest(X_orth,
 
 
 ```{r}
-read_csv('shaps.csv')[1:4] -> shaps
-
-plots <- list()
-for (i in nrow(shaps)) {
-  ggplot(aes(x = ))
-}
-
-cowplot::plot_grid()
+# read_csv('shaps.csv')[1:4] -> shaps
+# 
+# plots <- list()
+# for (i in nrow(shaps)) {
+#   ggplot(aes(x = ))
+# }
+# 
+# cowplot::plot_grid()
 ```
 
 # Paper analysis plots

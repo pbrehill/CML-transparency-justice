@@ -11,9 +11,9 @@ not_all_na <- function(x) {
   length(x[!is.na(x)]) != 0
 }
 
-file_u <- file.path('data', 'Combined u210u.sav')
-file_t <- file.path('data', 'Combined t210u.sav')
-file_s <- file.path('data', 'Combined s210u.sav')
+file_u <- file.path('Combined u210u.sav')
+file_t <- file.path('Combined t210u.sav')
+file_s <- file.path('Combined s210u.sav')
 
 # Load HILDA data
 data_s <- read_sav(file_u)
@@ -72,6 +72,9 @@ data_s$dob <- data_s %>% select(uhgdob) %>%
 data_s <- data_s %>% filter(!is.na(highest_ed) & !is.na(income))
 # data_s <- data_s[sample(nrow(data_s), 1000), ]
 
+data_s %<>%
+  mutate(bin_treat = car::recode(highest_ed, "12 = 0; 15 = 1; else = NA")) %>%
+  filter(!is.na(bin_treat))
 
 X <- data_s %>% select(
   -uedhists, 
@@ -79,7 +82,8 @@ X <- data_s %>% select(
   -utifefp, 
   -uhgdob,
   -income,
-  -highest_ed
+  -highest_ed,
+  -bin_treat
 )
 
 X_orth <- data_s[id_vars] %>%

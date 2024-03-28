@@ -8,6 +8,9 @@ library(tidyverse)
 library(grf)
 library(ggforce)
 
+source("distilled_causal_tree.R")
+```
+```{r}
 # source('predict_fn.R')
 data_full <- readRDS('data.rds')
 set.seed(30)
@@ -32,7 +35,7 @@ t100000 <- causal_forest(X,
                          Y.hat = y_hat,
                          W.hat = w_hat,
                          sample.weights = weights,
-                         num.trees = 100000)
+                         num.trees = 50000)
 
 # 10000 tree causal forest for benchmark
 t10000 <- causal_forest(X, 
@@ -137,119 +140,18 @@ losses %>%
     stat_summary(fun=mean, geom="line", aes(group=1), color ="red", size=2)
 ```
 
-## Nusiance Rashomon
+# Distillation
 
 ```{r}
-# Identifying models
-# y_hat100000 = regression_forest(X, Y%>% missMethods::impute_median() %>% pull(), num.trees = 100000)
-# w_hat100000 = regression_forest(X, W%>% missMethods::impute_median() %>% pull(), num.trees = 100000)
-
-y_hat10000 = regression_forest(X, Y, num.trees = 10000, honesty = FALSE)
-w_hat10000 = regression_forest(X, W, num.trees = 10000, honesty = FALSE)
-
-y_hat1000 = regression_forest(X, Y, num.trees = 1000, honesty = FALSE)
-w_hat1000 = regression_forest(X, W, num.trees = 1000, honesty = FALSE)
-
-y_hat100 = regression_forest(X, Y, num.trees = 100, honesty = FALSE)
-w_hat100 = regression_forest(X, W, num.trees = 100, honesty = FALSE)
-
-y_hat10 = regression_forest(X, Y, num.trees = 10, honesty = FALSE)
-w_hat10 = regression_forest(X, W, num.trees = 10, honesty = FALSE)
-
-y_hat1 = regression_forest(X, Y, num.trees = 1, ci.group.size = 1, honesty = FALSE)
-w_hat1 = regression_forest(X, W, num.trees = 1, ci.group.size = 1, honesty = FALSE)
+het_forest_results <- distilled_causal_tree(t100000, seed = 3, num_candidate_trees = 1000, replicates = 2000, maxdepth = 3)
 ```
 
 ```{r}
+best_treat_results <- het_forest_results$estimates  %>%
+  mutate(est = round(est, 3), se = round(se, 3)) %>%
+  arrange(as.numeric(node))
 
-# 10000 tree causal forest for benchmark
-# n100000 <- causal_forest(X,
-#                          Y %>% missMethods::impute_median() %>% pull(),
-#                          W %>% missMethods::impute_median() %>% pull,
-#                          Y.hat = y_hat100000$predictions %>% unlist(),
-#                          W.hat = w_hat100000$predictions %>% unlist(),
-#                          sample.weights = data_s$uhhwte,
-#                          num.trees = 10000)
-
-# 10000 tree causal forest for benchmark
-n10000 <- causal_forest(X, 
-                         Y, 
-                         W,
-                         Y.hat = predict(y_hat10000, X)$predictions,
-                         W.hat = predict(w_hat10000, X)$predictions,
-                         sample.weights = weights,
-                         num.trees = 10000)
-
-# 1000 tree causal forest
-n1000 <- causal_forest(X, 
-                         Y, 
-                         W,
-                         Y.hat = predict(y_hat1000, X)$predictions,
-                         W.hat = predict(w_hat1000, X)$predictions,
-                         sample.weights = weights,
-                         num.trees = 10000)
-
-# 100 tree causal forest
-n100 <- causal_forest(X, 
-                         Y, 
-                         W,
-                         Y.hat = predict(y_hat100, X)$predictions,
-                         W.hat = predict(w_hat100, X)$predictions,
-                         sample.weights = weights,
-                         num.trees = 10000)
-
-# 10 tree causal forest
-n10 <- causal_forest(X, 
-                         Y, 
-                         W,
-                         Y.hat = predict(y_hat10, X)$predictions,
-                         W.hat = predict(w_hat10, X)$predictions,
-                         sample.weights = weights,
-                         num.trees = 10000)
-
-# 2 tree causal forest
-n1 <- causal_forest(X, 
-                         Y, 
-                         W,
-                         Y.hat = predict(y_hat1, X)$predictions,
-                         W.hat = predict(w_hat1, X)$predictions,
-                         sample.weights = weights,
-                         num.trees = 10000)
-
+best_treat_results
 ```
 
-```{r}
-losses_n <- data.frame(
-  t1000 = n10000$predictions - n1000$predictions,
-  t100 = n10000$predictions - n100$predictions,
-  t10 = n10000$predictions - n10$predictions,
-  t1 = n10000$predictions - n1$predictions)
-```
-
-```{r}
-losses_n %>%
-  mutate_all(abs) %>%
-  gather("Number of trees", "Absolute loss") %>%
-  mutate(`Number of trees` = factor(`Number of trees`,
-                                    levels = c("t1", "t10", "t100", "t1000"),
-                                    labels = c("1", "10", "100", "1000"))) %>%
-  ggplot(aes(x = `Number of trees`, y = `Absolute loss`)) +
-    geom_jitter(alpha = 0.2) +
-    stat_summary(fun=mean, geom="line", aes(group=1), color ="red", size=2)
-
-ggsave('loss_graph_n.png')
-```
-
-```{r}
-losses_n %>%
-  gather("Number of trees", "Absolute loss") %>%
-  mutate(`Number of trees` = factor(`Number of trees`,
-                                    levels = c("t1", "t10", "t100", "t1000"),
-                                    labels = c("1", "10", "100", "1000"))) %>%
-  ggplot(aes(x = `Number of trees`, y = `Absolute loss`)) +
-    geom_jitter(alpha = 0.2) +
-    stat_summary(fun=mean, geom="line", aes(group=1), color ="red", size=2)
-
-ggsave('bias_graph_n.png')
-```
 

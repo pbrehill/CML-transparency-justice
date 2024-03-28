@@ -5,22 +5,15 @@ from econml.dml import CausalForestDML
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from random import randrange, seed
+import subprocess
 
-seed(10)
+seed(14)
 
 # Load in data
-X = pd.read_csv('X_id.csv')
+# subprocess.call ("Rscript data_setup.r", shell=True)
+X = pd.read_csv('X.csv')
 Y = pd.read_csv('Y.csv')
 W = pd.read_csv('W.csv')
-X_id = pd.read_csv('X_id.csv')
-
-# id_select = labs.label.loc[labs.include]
-# Estimate nuisance models
-w_model = RandomForestRegressor(n_estimators = 1000)
-w_model.fit(X_id, W)
-
-y_model = RandomForestRegressor(n_estimators = 1000)
-y_model.fit(X_id, Y)
 
 # fit causal forest with default parameters 
 causal_forest = CausalForestDML(n_estimators = 1000)
