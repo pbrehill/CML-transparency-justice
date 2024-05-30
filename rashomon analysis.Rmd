@@ -99,8 +99,46 @@ t1 <- causal_forest(X,
 #                          sample.weights = data_s$uhhwte,
 #                          num.trees = 10000)
 
+t100000 %>% write_rds("100000_forest.rds")
+t10000 %>% write_rds("10000_forest.rds")
+t1000 %>% write_rds("1000_forest.rds")
+t100 %>% write_rds("100_forest.rds")
+t10 %>% write_rds("10_forest.rds")
+t1 %>% write_rds("1_forest.rds")
 
 ```
+
+```{r}
+t100000 <- read_rds("100000_forest.rds")
+t10000 <- read_rds("10000_forest.rds")
+t1000 <- read_rds("1000_forest.rds")
+t100 <- read_rds("100_forest.rds")
+t10 <- read_rds("10_forest.rds")
+t1 <- read_rds("1_forest.rds")
+```
+
+
+```{r}
+het_forest_results <- distilled_causal_tree(t100000, seed = 3, num_candidate_trees = 1000, replicates = 2000, maxdepth = 3)
+```
+
+```{r}
+rloss <- function(Y, W, m_star, e_star, tau_x) {
+  r_losses <- (Y - m_star - (W - e_star) * tau_x)^2
+  mean(r_losses, na.rm = T)
+}
+
+replace_outliers_with_NA <- function(x) {
+  # Calculate the 2.5th and 97.5th percentiles
+  lower_bound <- quantile(x, 0, na.rm = T)
+  upper_bound <- quantile(x, 0.975, na.rm = T)
+  
+  # Replace values outside the bounds with NA
+  x[x < lower_bound | x > upper_bound] <- NA
+  return(x)
+}
+```
+
 
 ```{r}
 losses <- data.frame(
@@ -108,21 +146,40 @@ losses <- data.frame(
   t1000 = (t100000$prediction - t1000$predictions) / t100000$prediction,
   t100 = (t100000$prediction - t100$predictions) / t100000$prediction,
   t10 = (t100000$prediction - t10$predictions) / t100000$prediction,
-  t1 = (t100000$prediction - t1$predictions) / t100000$prediction
+  t1 = (t100000$prediction - t1$predictions) / t100000$prediction,
+  Distilled = (t100000$prediction - predict(het_forest_results$model, X)) / t100000$prediction
+)
+
+r_losses <- data.frame(
+  t50000 = rloss(Y, W, y_hat, w_hat, t100000$predictions),
+  t10000 = rloss(Y, W, y_hat, w_hat, t10000$predictions),
+  t1000 = rloss(Y, W, y_hat, w_hat, t1000$predictions),
+  t100 = rloss(Y, W, y_hat, w_hat, t100$predictions),
+  t10 = rloss(Y, W, y_hat, w_hat, t10$predictions),
+  t1 = rloss(Y, W, y_hat, w_hat, t1$predictions),
+  Distilled = rloss(Y, W, y_hat, w_hat, predict(het_forest_results$model, X))
 )
 ```
 
 ```{r}
+r_losses <- r_losses - r_losses[1,1]
+r_losses %>% t() %>% as.data.frame() %>% rownames_to_column("Learner") %>% stargazer::stargazer(summary = FALSE)
+```
+
+
+```{r}
+losses <- map_df(losses, replace_outliers_with_NA)
+
 losses %>%
   mutate_all(abs) %>%
   gather("Number of trees", "Absolute loss") %>%
   mutate(`Number of trees` = factor(`Number of trees`,
-                                    levels = c("t1", "t10", "t100", "t1000", "t10000"),
-                                    labels = c("1", "10", "100", "1000", "10000"))) %>%
+                                    levels = c("Distilled", "t1", "t10", "t100", "t1000", "t10000"),
+                                    labels = c("Distilled", "1", "10", "100", "1000", "10000"))) %>%
   ggplot(aes(x = `Number of trees`, y = `Absolute loss`)) +
-    geom_jitter(alpha = 0.2) +
+    geom_jitter(alpha = 0.1) +
     stat_summary(fun=mean, geom="line", aes(group=1), color ="red", size=2) +
-    facet_zoom(ylim = c(0, 0.5))
+    stat_summary(fun=mean, geom="point", aes(group=1), color ="red", size=3)
 
 ggsave('loss_graph.png')
 ```
@@ -143,15 +200,53 @@ losses %>%
 # Distillation
 
 ```{r}
-het_forest_results <- distilled_causal_tree(t100000, seed = 3, num_candidate_trees = 1000, replicates = 2000, maxdepth = 3)
+
 ```
 
 ```{r}
-best_treat_results <- het_forest_results$estimates  %>%
-  mutate(est = round(est, 3), se = round(se, 3)) %>%
-  arrange(as.numeric(node))
-
-best_treat_results
+losses = bind_rows(
+  losses,
+  data.frame(
+    
+  )
+)
 ```
 
+# Best linear projection
+
+```{r}
+important_variables <- variable_importance(t100000) > (mean(variable_importance(t100000)))
+vars <- names(X_orth)[important_variables]
+```
+
+```{r}
+library(fastDummies)
+A <- data_s %>% select(any_of(vars)) %>% map_df(~.x %>% as_factor() %>% as.character())
+A$uhgdob <- X_orth[, "uhgdob"]
+A <- dummy_cols(A, select_columns = c("uhgsex", "uancob", "uedcly"), remove_selected_columns = TRUE)
+A <- mutate_all(A, as.numeric)
+A <- A[, colSums(A, na.rm = T) >= 100]
+```
+
+```{r}
+blp <- best_linear_projection(t100000, A)
+```
+
+```{r}
+stargazer::stargazer(blp)
+```
+
+```{r Variable importance}
+varimp <- data.frame(
+  names = data_s[t100000$X.orig %>% names()] %>% labelled::get_variable_labels() %>% unlist(),
+  importance = variable_importance(t100000)
+) %>% arrange(desc(importance)) %>% as.tibble() %>% 
+  mutate(
+    cumsum = cumsum(importance),
+    importance = format(round(importance, 3), nsmall = 3)
+    )
+
+varimp %>%
+  stargazer::stargazer(summary = FALSE)
+```
 
