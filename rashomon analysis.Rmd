@@ -1,17 +1,23 @@
 ---
-title: "R Notebook"
+title: "Analysis for Transparency challenges in policy evaluation with causal machine learning – improving usability and accountability"
 output: html_notebook
 ---
 
 ```{r}
+# Set up data from clean env
+rm(list = ls())
+source("data_setup.R")
+rm(list = ls())
+
+# Load neccessary libraries
 library(tidyverse)
 library(grf)
 library(ggforce)
-
+library(fastDummies)
 source("distilled_causal_tree.R")
 ```
+
 ```{r}
-# source('predict_fn.R')
 data_full <- readRDS('data.rds')
 set.seed(30)
 ```
@@ -24,6 +30,7 @@ weights <- data_full$weights
 w_hat <- data_full$What
 y_hat <- data_full$Yhat
 X_id <- data_full$Xid
+orth_labels <- data_full$orth_labels
 ```
 
 ```{r}
@@ -179,7 +186,8 @@ losses %>%
   ggplot(aes(x = `Number of trees`, y = `Absolute loss`)) +
     geom_jitter(alpha = 0.1) +
     stat_summary(fun=mean, geom="line", aes(group=1), color ="red", size=2) +
-    stat_summary(fun=mean, geom="point", aes(group=1), color ="red", size=3)
+    stat_summary(fun=mean, geom="point", aes(group=1), color ="red", size=3) +
+    scale_y_continuous(limits = c(0,5))
 
 ggsave('loss_graph.png')
 ```
@@ -194,35 +202,22 @@ losses %>%
                                     labels = c("1", "10", "100", "1000", "10000"))) %>%
   ggplot(aes(x = `Number of trees`, y = `Absolute loss`)) +
     geom_jitter(alpha = 0.2) +
-    stat_summary(fun=mean, geom="line", aes(group=1), color ="red", size=2)
+    stat_summary(fun=mean, geom="line", aes(group=1), color ="red", size=2) +
+    scale_y_continuous(limits = c(0,5))
 ```
 
 # Distillation
-
-```{r}
-
-```
-
-```{r}
-losses = bind_rows(
-  losses,
-  data.frame(
-    
-  )
-)
-```
 
 # Best linear projection
 
 ```{r}
 important_variables <- variable_importance(t100000) > (mean(variable_importance(t100000)))
-vars <- names(X_orth)[important_variables]
+vars <- names(X)[important_variables]
 ```
 
 ```{r}
-library(fastDummies)
-A <- data_s %>% select(any_of(vars)) %>% map_df(~.x %>% as_factor() %>% as.character())
-A$uhgdob <- X_orth[, "uhgdob"]
+A <- X %>% select(any_of(vars)) %>% map_df(~.x %>% as_factor() %>% as.character())
+A$uhgdob <- X[, "uhgdob"]
 A <- dummy_cols(A, select_columns = c("uhgsex", "uancob", "uedcly"), remove_selected_columns = TRUE)
 A <- mutate_all(A, as.numeric)
 A <- A[, colSums(A, na.rm = T) >= 100]
@@ -238,7 +233,7 @@ stargazer::stargazer(blp)
 
 ```{r Variable importance}
 varimp <- data.frame(
-  names = data_s[t100000$X.orig %>% names()] %>% labelled::get_variable_labels() %>% unlist(),
+  names = orth_labels,
   importance = variable_importance(t100000)
 ) %>% arrange(desc(importance)) %>% as.tibble() %>% 
   mutate(

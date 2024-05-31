@@ -129,7 +129,7 @@ labels_t <- data_s %>%
 
 
 
-names(X) <- labels_t$label[labels_t$name %in% names(X)]
+# names(X) <- labels_t$label[labels_t$name %in% names(X)]
 
 
 
@@ -142,7 +142,7 @@ names(X) <- labels_t$label[labels_t$name %in% names(X)]
 
 # X_id <- data_s %>% select(id_filter %>% pull) %>% mutate_all(as.numeric)%>% select(where(not_all_na)) %>% missMethods::impute_median()
 
-names(X_orth) <- labels_t$label[labels_t$name %in% names(X_orth)]
+orth_labels <- labels_t$label[labels_t$name %in% names(X_orth)]
 
 write_csv(X_orth, 'X_id.csv')
 
@@ -158,7 +158,8 @@ list(
   X = X_orth, Y=Y, W=W, Xid = X_orth, 
   Yhat = y_hat$predict %>% as.numeric, 
   What=w_hat$predict %>% as.numeric, 
-  weights = as.numeric(weights)
+  weights = as.numeric(weights),
+  orth_labels = orth_labels
 ) %>%
   write_rds('data.rds')
 

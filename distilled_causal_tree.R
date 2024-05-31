@@ -492,7 +492,7 @@ get_honest_estimates <- function(tree, data = NULL, dr_scores = NULL, replicates
   
   out <- bs$splits %>%
     map(function (x) {
-      dr_scores_bs <- analysis(x)
+      dr_scores_bs <- rsample::analysis(x)
       
       bs_df <- data.frame(node = names(held_out_nodes))
       bs_df$est <- map_dbl(dr_point_est$node, ~mean(dr_scores_bs[dr_scores_bs[,.x],"dr_scores"], na.rm = T))
